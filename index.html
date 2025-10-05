@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Telegram посты - Mistral (кеширование локально)</title>
+<title>HahaТоновские новости</title>
 <style>
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -63,11 +63,18 @@ button:hover { background: linear-gradient(90deg,#0056b3,#003f7f); transform: tr
 .column h2 { color: #0047ab; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 6px; margin-bottom: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 .controls-row { display:flex; gap:12px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
 .switch { display:inline-flex; align-items:center; gap:8px; font-size:14px; color:#033a8c; }
+
+/* disabled style for count inputs when in time mode */
+input.post-count[disabled], input.post-count[readonly] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f5f7fb;
+}
 </style>
 </head>
 <body>
 
-<h1>Telegram посты - Mistral (кеширование локально)</h1>
+<h1>HahaТоновские новости</h1>
 
 <div style="max-width: 980px; margin: 0 auto; padding: 0 12px;">
   <p>Введите ваш API ключ Mistral:</p>
@@ -91,7 +98,6 @@ button:hover { background: linear-gradient(90deg,#0056b3,#003f7f); transform: tr
       <div style="margin-left:auto;">
         <button id="add-link">Добавить ссылку</button>
         <button id="load">Загрузить посты</button>
-        <button id="refresh">Обновить данные</button>
       </div>
     </div>
 
@@ -159,11 +165,34 @@ function addLinkField(value='',count=3){
   div.innerHTML=`<input type="text" placeholder="https://t.me/channel" value="${value}">
                  <input type="number" class="post-count" min="1" value="${count}" title="Количество постов" style="width:90px;">
                  <button class="remove-btn" title="Удалить эту ссылку">✖</button>`;
-  div.querySelector('input[type="text"]').addEventListener('input',saveLinksCookie);
-  div.querySelector('input.post-count').addEventListener('input',saveLinksCookie);
-  div.querySelector('.remove-btn').addEventListener('click',()=>{ div.remove(); saveLinksCookie(); });
+  const textInput = div.querySelector('input[type="text"]');
+  const countInput = div.querySelector('input.post-count');
+  const removeBtn = div.querySelector('.remove-btn');
+
+  textInput.addEventListener('input',saveLinksCookie);
+  countInput.addEventListener('input',saveLinksCookie);
+  removeBtn.addEventListener('click',()=>{ div.remove(); saveLinksCookie(); });
+
+  updateSingleCountInputDisabled(countInput, modeToggle.checked);
+
   linksContainer.appendChild(div);
 }
+function updateSingleCountInputDisabled(elem, disabled){
+  if(!elem) return;
+  if(disabled){
+    elem.setAttribute('disabled','true');
+    elem.setAttribute('title','Недоступно в режиме по времени');
+  } else {
+    elem.removeAttribute('disabled');
+    elem.removeAttribute('title');
+  }
+}
+function updateAllCountInputsDisabled(){
+  const disabled = modeToggle.checked === true;
+  const countInputs = linksContainer.querySelectorAll('input.post-count');
+  countInputs.forEach(inp => updateSingleCountInputDisabled(inp, disabled));
+}
+
 const savedLinks=getCookie('telegram_links');
 if(savedLinks){
   try{ JSON.parse(savedLinks).forEach(l=>addLinkField(l.url,l.count)); }
@@ -171,8 +200,11 @@ if(savedLinks){
 }else{ addLinkField(); addLinkField(); addLinkField(); }
 document.getElementById('add-link').addEventListener('click',()=>addLinkField());
 
-// show/hide time settings visually
-function updateTimeSettingsVisibility(){ document.getElementById('time-settings').style.opacity = modeToggle.checked ? '1' : '0.6'; }
+// show/hide time settings visually and toggle count inputs disabled state
+function updateTimeSettingsVisibility(){ 
+  document.getElementById('time-settings').style.opacity = modeToggle.checked ? '1' : '0.6';
+  updateAllCountInputsDisabled();
+}
 modeToggle.addEventListener('change',updateTimeSettingsVisibility);
 updateTimeSettingsVisibility();
 
@@ -201,15 +233,14 @@ function loadCache(){
   }catch(e){ console.error('Ошибка чтения кеша', e); return null; }
 }
 function saveCache(cacheObj){
-  try{
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheObj));
-  }catch(e){ console.error('Ошибка сохранения кеша', e); }
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify(cacheObj)); }
+  catch(e){ console.error('Ошибка сохранения кеша', e); }
 }
 function clearCache(){
   localStorage.removeItem(CACHE_KEY);
 }
 
-// --- Проверяем, подходит ли кеш под текущие настройки ---
+// --- Проверка соответствия кеша текущим настройкам ---
 function inputsFromUI(){
   return [...linksContainer.querySelectorAll('.link-input')].map(div=>{
     return {
@@ -221,21 +252,17 @@ function inputsFromUI(){
 function isCacheValid(cache, inputs, useTimeMode, timeAmount, timeUnit){
   if(!cache) return false;
   try{
-    // compare inputs as JSON (order matters)
     if(JSON.stringify(cache.inputs) !== JSON.stringify(inputs)) return false;
     if(!!cache.useTimeMode !== !!useTimeMode) return false;
     if(useTimeMode){
       if(cache.timeAmount !== timeAmount) return false;
       if(cache.timeUnit !== timeUnit) return false;
-    } else {
-      // in count mode, each input has a count; ensure cache stored counts match
-      // already covered by inputs equality
     }
     return true;
   }catch(e){ return false; }
 }
 
-// --- Fetch posts from Telegram (existing logic) ---
+// --- Fetch posts from Telegram ---
 async function fetchPostsFromTelegram(){
   setProgress('Сбор постов...', true);
   const useTimeMode = modeToggle.checked;
@@ -311,14 +338,13 @@ async function fetchPostsFromTelegram(){
     }
   }
 
-  // final sort desc by date
   collected.sort((a,b)=> (b.date?.getTime()||0) - (a.date?.getTime()||0) );
   allPosts = collected;
   setProgress(`Посты загружены: ${allPosts.length}`, false);
   return allPosts;
 }
 
-// --- Display functions (unchanged) ---
+// --- Display functions ---
 function createPostElement(post){
   const wrapper=document.createElement('div');
   wrapper.className='collapsed';
@@ -420,7 +446,7 @@ function displayGroupedPosts(){
 
 // --- Mistral: robust parser + caching of results ---
 async function processPostsOnceMistral(){
-  if(allPosts.length===0) return;
+  if(allPosts.length===0) return false;
   const API_KEY=API_KEY_INPUT.value.trim();
   if(!API_KEY) return alert('Введите ключ API!');
   setProgress('Отправка на Mistral и генерация кратких описаний...', true);
@@ -452,7 +478,7 @@ async function processPostsOnceMistral(){
       console.error('Отклик Mistral не содержит JSON-блока', text);
       alert('Не удалось извлечь JSON из ответа Mistral. Проверьте ответ в консоли.');
       setProgress('Ошибка: не удалось извлечь JSON из ответа Mistral');
-      return;
+      return false;
     }
 
     const balanced = tryBalanceBraces(jsonText);
@@ -462,7 +488,7 @@ async function processPostsOnceMistral(){
       console.error('Ошибка парсинга JSON после восстановления:', err, 'Исходный текст:', jsonText);
       alert('Ошибка парсинга JSON от Mistral (см. консоль).');
       setProgress('Ошибка парсинга JSON');
-      return;
+      return false;
     }
 
     if(Array.isArray(parsed.summaries)){
@@ -510,7 +536,6 @@ async function loadHandler({ forceRefresh = false } = {}){
   const cache = loadCache();
 
   if(!forceRefresh && isCacheValid(cache, inputs, useTimeMode, timeAmount, timeUnit) && Array.isArray(cache.allPosts) && cache.allPosts.length > 0){
-    // load from cache: restore dates
     allPosts = cache.allPosts.map(p => ({ ...p, date: p.date ? new Date(p.date) : null }));
     window.groupedData = cache.groupedData || [];
     setProgress(`Данные загружены из кеша (сохранено ${cache.savedAt})`);
@@ -519,10 +544,8 @@ async function loadHandler({ forceRefresh = false } = {}){
     return;
   }
 
-  // если forceRefresh — удалим старый кеш для текущ конфигурации (чтобы не мешал)
   if(forceRefresh && cache) clearCache();
 
-  // fetch posts from telegram
   await fetchPostsFromTelegram();
 
   if(allPosts.length === 0){
@@ -531,16 +554,13 @@ async function loadHandler({ forceRefresh = false } = {}){
     return;
   }
 
-  // send to Mistral
   const ok = await processPostsOnceMistral();
   if(!ok){
-    // Mistral failed; still display posts without summaries
     displayPosts();
     displayGroupedPosts();
     return;
   }
 
-  // Save to cache: serialize dates to ISO
   const cacheObj = {
     inputs,
     useTimeMode,
@@ -552,7 +572,6 @@ async function loadHandler({ forceRefresh = false } = {}){
   };
   saveCache(cacheObj);
 
-  // display
   displayPosts();
   displayGroupedPosts();
   setProgress('Готово! Данные сохранены в локальном кеше.');
@@ -567,13 +586,13 @@ function inputsFromUI(){
 
 // --- Кнопки ---
 document.getElementById('load').addEventListener('click', async ()=>{ await loadHandler({ forceRefresh: false }); });
-document.getElementById('refresh').addEventListener('click', async ()=>{ await loadHandler({ forceRefresh: true }); });
 
 // Сохранение API key по Enter
 API_KEY_INPUT.addEventListener('keydown', e=>{ if(e.key === 'Enter') setCookie('mistral_api_key', API_KEY_INPUT.value.trim(), 365); });
 
 // --- Попытка загрузить из кеша при старте (если соответствует текущим настройкам) ---
 (async function initFromCache(){
+  updateAllCountInputsDisabled();
   const inputs = inputsFromUI();
   const useTimeMode = modeToggle.checked;
   const timeAmount = parseInt(timeAmountInput.value) || 1;
