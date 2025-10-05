@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Telegram посты - Mistral</title>
+<title>Telegram посты - Mistral (кеширование локально)</title>
 <style>
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -11,135 +11,91 @@ body {
   background: linear-gradient(to right, #f0f4ff, #ffffff);
   color: #1a1a1a;
 }
-h1 {
-  text-align: center;
-  padding: 20px 10px;
-  color: #0047ab;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
+h1 { text-align: center; padding: 20px 10px; color: #0047ab; text-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .container { display: flex; gap: 20px; padding: 20px; }
 .column {
-  flex: 1;
-  background:#ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  max-height: 80vh;
-  overflow-y: auto;
-  transition: transform 0.2s;
+  flex: 1; background:#ffffff; border-radius: 12px; padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-height: 80vh; overflow-y: auto; transition: transform 0.2s;
 }
 .column:hover { transform: translateY(-3px); }
-input[type="text"], input[type="number"] {
-  width: 70%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 15px;
+input[type="text"], input[type="number"], select {
+  width: 70%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;
   transition: all 0.2s;
 }
-input[type="text"]:focus, input[type="number"]:focus { border-color: #007bff; outline: none; }
+input[type="text"]:focus, input[type="number"]:focus, select:focus { border-color: #007bff; outline: none; }
 input.post-count { width: 25%; margin-left: 5px; }
+.small-input { width: 90px; display: inline-block; margin-left:6px; margin-right:6px; vertical-align:middle; }
 button {
-  padding: 10px 18px;
-  border: none;
-  background: linear-gradient(90deg,#007bff,#0056b3);
-  color: #fff;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 15px;
-  transition: all 0.3s;
-  margin-right: 5px;
+  padding: 10px 18px; border: none; background: linear-gradient(90deg,#007bff,#0056b3);
+  color: #fff; border-radius: 8px; cursor: pointer; font-size: 15px; transition: all 0.3s; margin-right: 5px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 button:hover { background: linear-gradient(90deg,#0056b3,#003f7f); transform: translateY(-2px); }
-.link-input {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-  gap: 5px;
-}
+.link-input { display: flex; align-items: center; margin-bottom: 10px; gap: 5px; }
 .link-input input { flex: 1; }
 .remove-btn {
-  background: #dc3545;
-  padding: 12px 14px;
-  font-size: 14px;
-  border-radius: 8px;
-  height: 45px;
-  line-height: 1;
+  background: #dc3545; padding: 12px 14px; font-size: 14px; border-radius: 8px; height: 45px; line-height: 1;
 }
 .remove-btn:hover { background: #a71d2a; }
 #progress { font-weight: bold; margin: 10px 0; color:#0047ab; }
-.loader {
-  display:inline-block;
-  width:14px;
-  height:14px;
-  border:2px solid #007bff;
-  border-radius:50%;
-  border-top-color:transparent;
-  animation: spin 0.8s linear infinite;
-  margin-left:5px;
-  vertical-align:middle;
-}
+.loader { display:inline-block; width:14px; height:14px; border:2px solid #007bff; border-radius:50%; border-top-color:transparent; animation: spin 0.8s linear infinite; margin-left:5px; vertical-align:middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .post-wrapper { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
 .collapsed {
-  cursor: pointer;
-  padding: 12px;
-  border: 2px solid #007bff;
-  border-radius: 12px;
-  background: #e6f0ff;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
-  transition: background 0.3s, border-color 0.3s, transform 0.2s;
+  cursor: pointer; padding: 12px; border: 2px solid #007bff; border-radius: 12px; background: #e6f0ff;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08); transition: background 0.3s, border-color 0.3s, transform 0.2s;
 }
 .collapsed:hover { background: #d0e4ff; border-color: #0056b3; transform: translateY(-2px); }
 .collapsed span { font-weight: bold; font-size: 14px; }
 .expanded { margin-top: 8px; overflow:hidden; transition:max-height 0.5s ease; }
 .group-block {
-  border: 2px solid #007bff;
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 15px;
-  background: #f0f7ff;
+  border: 2px solid #007bff; border-radius: 12px; padding: 12px; margin-bottom: 15px; background: #f0f7ff;
   transition: transform 0.2s;
 }
 .group-block:hover { transform: translateY(-2px); }
 .group-title {
-  font-weight: bold;
-  margin-bottom: 5px;
-  cursor: pointer;
-  padding: 8px;
-  background: #d6eaff;
-  border-radius: 8px;
-  transition: background 0.3s;
+  font-weight: bold; margin-bottom: 5px; cursor: pointer; padding: 8px; background: #d6eaff; border-radius: 8px; transition: background 0.3s;
 }
 .group-title:hover { background: #c0e0ff; }
-.group-posts { max-height: 0; overflow:hidden; transition: max-height 0.5s ease; } 
-.group-posts.show { max-height: 2000px; }
-.column h2 {
-  color: #0047ab;
-  font-size: 18px;
-  border-bottom: 2px solid #007bff;
-  padding-bottom: 6px;
-  margin-bottom: 12px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
+.group-posts { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+.group-posts.open { }
+.group-posts.limited { max-height: 70vh; overflow: auto; }
+.column h2 { color: #0047ab; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 6px; margin-bottom: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.controls-row { display:flex; gap:12px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+.switch { display:inline-flex; align-items:center; gap:8px; font-size:14px; color:#033a8c; }
 </style>
 </head>
 <body>
 
-<h1>Telegram посты - Mistral</h1>
+<h1>Telegram посты - Mistral (кеширование локально)</h1>
 
-<div style="max-width: 900px; margin: 0 auto; padding: 0 10px;">
+<div style="max-width: 980px; margin: 0 auto; padding: 0 12px;">
   <p>Введите ваш API ключ Mistral:</p>
   <input type="text" id="api-key" placeholder="Введите ключ API здесь">
 
   <div id="links-inputs">
-    <p>Введите ссылки на публичные каналы Telegram и количество постов для каждого:</p>
+    <p>Введите ссылки на публичные каналы Telegram и количество постов для каждого (режим по количеству используется если выключен режим времени):</p>
+
+    <div class="controls-row">
+      <label class="switch"><input type="checkbox" id="mode-toggle" checked> Режим по времени</label>
+      <div id="time-settings" style="display:inline-flex; align-items:center;">
+        За
+        <input type="number" id="time-amount" class="small-input" value="1" min="1" title="Сколько времени назад">
+        <select id="time-unit" style="padding:8px;border-radius:6px;border:1px solid #ccc;">
+          <option value="minutes">минут(ы)</option>
+          <option value="hours" selected>час(ов)</option>
+          <option value="days">день(ей)</option>
+        </select>
+      </div>
+
+      <div style="margin-left:auto;">
+        <button id="add-link">Добавить ссылку</button>
+        <button id="load">Загрузить посты</button>
+        <button id="refresh">Обновить данные</button>
+      </div>
+    </div>
+
     <div id="links-container"></div>
-    <button id="add-link">Добавить ссылку</button>
-    <button id="load">Загрузить посты</button>
-    <button id="refresh">Обновить данные</button>
   </div>
 
   <div id="progress">Готово</div>
@@ -157,7 +113,10 @@ button:hover { background: linear-gradient(90deg,#0056b3,#003f7f); transform: tr
 </div>
 
 <script>
-// --- Cookie helper ---
+// ------------- Настройки кеша -------------
+const CACHE_KEY = 'telegram_cache_v2'; // localStorage key
+
+// --- Cookie helper (для ссылок и api key) ---
 function setCookie(name,value,days){
   const d=new Date(); d.setTime(d.getTime()+(days*24*60*60*1000));
   document.cookie=name+"="+encodeURIComponent(value)+";expires="+d.toUTCString()+";path=/";
@@ -168,20 +127,24 @@ function getCookie(name){
   return null;
 }
 
-// --- Variables ---
+// --- Переменные DOM ---
 const API_KEY_INPUT=document.getElementById('api-key');
 const linksContainer=document.getElementById('links-container');
 const progressEl=document.getElementById('progress');
-let allPosts=[];
+const modeToggle=document.getElementById('mode-toggle');
+const timeAmountInput=document.getElementById('time-amount');
+const timeUnitSelect=document.getElementById('time-unit');
+
+let allPosts=[]; // array of {channel,idNum,date:Date,text,summary?}
 window.groupedData=[];
 
-// --- API key ---
+// --- Загрузка API key и links из cookie ---
 const savedKey=getCookie('mistral_api_key');
 if(savedKey) API_KEY_INPUT.value=savedKey;
 API_KEY_INPUT.addEventListener('input',()=>setCookie('mistral_api_key',API_KEY_INPUT.value.trim(),365));
 
-// --- Links ---
-function saveLinks(){
+// --- Links management (cookie-stored) ---
+function saveLinksCookie(){
   const inputs=[...linksContainer.querySelectorAll('.link-input')].map(div=>{
     const url=div.querySelector('input[type="text"]').value.trim();
     const count=parseInt(div.querySelector('input.post-count').value)||3;
@@ -192,180 +155,438 @@ function saveLinks(){
 function addLinkField(value='',count=3){
   const div=document.createElement('div');
   div.className='link-input';
+  div.style.gap='8px';
   div.innerHTML=`<input type="text" placeholder="https://t.me/channel" value="${value}">
-                 <input type="number" class="post-count" min="1" value="${count}">
-                 <button class="remove-btn">✖</button>`;
-  div.querySelector('input[type="text"]').addEventListener('input',saveLinks);
-  div.querySelector('input.post-count').addEventListener('input',saveLinks);
-  div.querySelector('.remove-btn').addEventListener('click',()=>{ div.remove(); saveLinks(); });
+                 <input type="number" class="post-count" min="1" value="${count}" title="Количество постов" style="width:90px;">
+                 <button class="remove-btn" title="Удалить эту ссылку">✖</button>`;
+  div.querySelector('input[type="text"]').addEventListener('input',saveLinksCookie);
+  div.querySelector('input.post-count').addEventListener('input',saveLinksCookie);
+  div.querySelector('.remove-btn').addEventListener('click',()=>{ div.remove(); saveLinksCookie(); });
   linksContainer.appendChild(div);
 }
 const savedLinks=getCookie('telegram_links');
-if(savedLinks){ try{ JSON.parse(savedLinks).forEach(l=>addLinkField(l.url,l.count)); } catch(e){ addLinkField(); addLinkField(); } }
-else{ addLinkField(); addLinkField(); addLinkField(); }
+if(savedLinks){
+  try{ JSON.parse(savedLinks).forEach(l=>addLinkField(l.url,l.count)); }
+  catch(e){ addLinkField(); addLinkField(); addLinkField(); }
+}else{ addLinkField(); addLinkField(); addLinkField(); }
 document.getElementById('add-link').addEventListener('click',()=>addLinkField());
 
-// --- Progress helper ---
-function setProgress(text,showLoader=false){ progressEl.innerHTML=text+(showLoader?'<span class="loader"></span>':''); }
+// show/hide time settings visually
+function updateTimeSettingsVisibility(){ document.getElementById('time-settings').style.opacity = modeToggle.checked ? '1' : '0.6'; }
+modeToggle.addEventListener('change',updateTimeSettingsVisibility);
+updateTimeSettingsVisibility();
 
-// --- Helper ---
-function parseChannelFromLink(link){ return link.replace(/^https?:\/\/t\.me\/(s\/)?/,''); }
+// --- UI helpers ---
+function setProgress(text,showLoader=false){ progressEl.innerHTML=text+(showLoader?'<span class="loader"></span>':''); }
+function parseChannelFromLink(link){ return link.replace(/^https?:\/\/t\.me\/(s\/)?/,'').replace(/\/$/,''); }
 function qAll(node,sel){ return [...node.querySelectorAll(sel)]; }
 
-// --- Fetch posts ---
-async function fetchPostsFromTelegram(){
-  setProgress('Сбор постов...',true);
-  const inputs=[...linksContainer.querySelectorAll('.link-input')].map(div=>{
-    const url=div.querySelector('input[type="text"]').value.trim();
-    const count=parseInt(div.querySelector('input.post-count').value)||3;
-    return {url,count};
-  }).filter(l=>l.url);
-  if(inputs.length===0) return alert('Введите хотя бы одну ссылку');
-  saveLinks();
+// --- Time target calculation ---
+function computeTargetTime(){
+  const amount = Math.max(1, parseInt(timeAmountInput.value) || 1);
+  const unit = timeUnitSelect.value;
+  let ms = 0;
+  if(unit === 'minutes') ms = amount * 60 * 1000;
+  else if(unit === 'hours') ms = amount * 60 * 60 * 1000;
+  else ms = amount * 24 * 60 * 60 * 1000;
+  return new Date(Date.now() - ms);
+}
 
-  allPosts=[];
+// --- Кеш: чтение/запись ---
+function loadCache(){
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ console.error('Ошибка чтения кеша', e); return null; }
+}
+function saveCache(cacheObj){
+  try{
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheObj));
+  }catch(e){ console.error('Ошибка сохранения кеша', e); }
+}
+function clearCache(){
+  localStorage.removeItem(CACHE_KEY);
+}
+
+// --- Проверяем, подходит ли кеш под текущие настройки ---
+function inputsFromUI(){
+  return [...linksContainer.querySelectorAll('.link-input')].map(div=>{
+    return {
+      url: div.querySelector('input[type="text"]').value.trim(),
+      count: parseInt(div.querySelector('input.post-count').value) || 3
+    };
+  }).filter(x=>x.url);
+}
+function isCacheValid(cache, inputs, useTimeMode, timeAmount, timeUnit){
+  if(!cache) return false;
+  try{
+    // compare inputs as JSON (order matters)
+    if(JSON.stringify(cache.inputs) !== JSON.stringify(inputs)) return false;
+    if(!!cache.useTimeMode !== !!useTimeMode) return false;
+    if(useTimeMode){
+      if(cache.timeAmount !== timeAmount) return false;
+      if(cache.timeUnit !== timeUnit) return false;
+    } else {
+      // in count mode, each input has a count; ensure cache stored counts match
+      // already covered by inputs equality
+    }
+    return true;
+  }catch(e){ return false; }
+}
+
+// --- Fetch posts from Telegram (existing logic) ---
+async function fetchPostsFromTelegram(){
+  setProgress('Сбор постов...', true);
+  const useTimeMode = modeToggle.checked;
+  const targetTime = computeTargetTime();
+  const inputs = inputsFromUI();
+  if(inputs.length===0) return alert('Введите хотя бы одну ссылку');
+  saveLinksCookie();
+
+  const collected = [];
   for(const {url,count} of inputs){
-    const channel=parseChannelFromLink(url);
-    const fetchUrl=`https://t.me/s/${channel}`;
+    const channel = parseChannelFromLink(url);
+    setProgress(`Загрузка канала ${channel}...`, true);
     try{
-      const resp=await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(fetchUrl)}`);
-      const html=await resp.text();
-      const doc=new DOMParser().parseFromString(html,'text/html');
-      const rawNodes=qAll(doc,'.tgme_widget_message_wrap');
-      const channelPosts=rawNodes.slice(-count).map(node=>{
-        const dataPost=node.getAttribute('data-post');
-        let idNum=dataPost?parseInt(dataPost.split('/')[1]):null;
-        if(!idNum){ const a=node.querySelector('a.tgme_widget_message_date'); if(a){ const m=a.getAttribute('href')?.match(/\/(\d+)$/); if(m)idNum=parseInt(m[1]); } }
-        const textEl=node.querySelector('.tgme_widget_message_text');
-        const text=textEl?.textContent?.trim()||'';
-        const timeEl=node.querySelector('time');
-        const date=timeEl&&timeEl.getAttribute('datetime')?new Date(timeEl.getAttribute('datetime')):null;
-        return {channel,idNum,date,text};
+      const resp = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent('https://t.me/s/' + channel)}`);
+      const html = await resp.text();
+      const doc = new DOMParser().parseFromString(html,'text/html');
+      let rawNodes = qAll(doc,'.tgme_widget_message_wrap');
+      if(rawNodes.length===0){
+        console.warn(`Нет сообщений на странице ${channel}`);
+        continue;
+      }
+      if(!useTimeMode){
+        rawNodes = rawNodes.slice(-count);
+      }
+      const channelPosts = rawNodes.map(node=>{
+        const dataPost = node.getAttribute('data-post');
+        let idNum = dataPost ? parseInt(dataPost.split('/')[1]) : null;
+        if(!idNum){
+          const a = node.querySelector('a.tgme_widget_message_date');
+          if(a){
+            const m = a.getAttribute('href')?.match(/\/(\d+)$/);
+            if(m) idNum = parseInt(m[1]);
+          }
+        }
+        const textEl = node.querySelector('.tgme_widget_message_text');
+        const text = textEl?.textContent?.trim() || '';
+        const timeEl = node.querySelector('time');
+        const date = timeEl && timeEl.getAttribute('datetime') ? new Date(timeEl.getAttribute('datetime')) : null;
+        return {channel, idNum, date, text};
       });
-      allPosts.push(...channelPosts);
-    }catch(e){ console.error(e); }
+
+      channelPosts.sort((a,b)=> (a.idNum||0) - (b.idNum||0) );
+      const avgInterval = 10 * 60 * 1000;
+      const anyReal = channelPosts.some(p=>p.date instanceof Date && !isNaN(p.date));
+      if(anyReal){
+        let firstRealIndex = channelPosts.findIndex(p=>p.date instanceof Date && !isNaN(p.date));
+        for(let i = firstRealIndex - 1; i >= 0; i--){
+          channelPosts[i].date = new Date(channelPosts[i+1].date.getTime() - avgInterval);
+        }
+        for(let i = firstRealIndex + 1; i < channelPosts.length; i++){
+          if(!(channelPosts[i].date instanceof Date && !isNaN(channelPosts[i].date))){
+            channelPosts[i].date = new Date(channelPosts[i-1].date.getTime() + avgInterval);
+          }
+        }
+      } else {
+        const now = new Date();
+        for(let i = 0; i < channelPosts.length; i++){
+          const offset = (channelPosts.length - i) * avgInterval;
+          channelPosts[i].date = new Date(now.getTime() - offset);
+        }
+      }
+
+      let selected;
+      if(useTimeMode){
+        selected = channelPosts.filter(p => p.date && p.date >= targetTime);
+      } else {
+        selected = channelPosts.slice(-count);
+      }
+
+      collected.push(...selected);
+    }catch(e){
+      console.error('Ошибка загрузки канала', url, e);
+    }
   }
-  // Sort dates
-  const channelsMap={};
-  allPosts.forEach(p=>{ if(!channelsMap[p.channel]) channelsMap[p.channel]=[]; channelsMap[p.channel].push(p); });
-  for(const ch in channelsMap){
-    const posts=channelsMap[ch].sort((a,b)=>(a.idNum||0)-(b.idNum||0));
-    const avgInterval=10*60*1000;
-    for(let i=0;i<posts.length;i++){ if(!posts[i].date) posts[i].date=posts[i-1]?.date?new Date(posts[i-1].date.getTime()+avgInterval):new Date(); }
-  }
-  allPosts.sort((a,b)=>b.date-a.date);
-  setProgress('Посты загружены');
+
+  // final sort desc by date
+  collected.sort((a,b)=> (b.date?.getTime()||0) - (a.date?.getTime()||0) );
+  allPosts = collected;
+  setProgress(`Посты загружены: ${allPosts.length}`, false);
   return allPosts;
 }
 
-// --- Display functions ---
+// --- Display functions (unchanged) ---
 function createPostElement(post){
   const wrapper=document.createElement('div');
   wrapper.className='collapsed';
   wrapper.setAttribute('data-idnum',post.idNum);
   wrapper.setAttribute('data-channel',post.channel);
-  wrapper.innerHTML=`<span>${post.channel}</span> ${post.summary||post.text?.substring(0,50)||''}`;
+  const prettyDate = post.date ? ` — ${post.date.toLocaleString()}` : '';
+  const preview = post.summary || (post.text ? post.text.substring(0,120) : '');
+  wrapper.innerHTML=`<span>${post.channel}</span><small style="color:#333;margin-left:8px;">${prettyDate}</small><div style="margin-top:8px;color:#111">${preview}</div>`;
   const expandedContainer=document.createElement('div'); expandedContainer.className='expanded';
   wrapper.appendChild(expandedContainer);
 
   wrapper.addEventListener('click',()=>{
     const opened=expandedContainer.dataset.opened==='true';
-    if(opened){ expandedContainer.innerHTML=''; expandedContainer.dataset.opened='false'; wrapper.style.background='#e6f0ff'; wrapper.style.borderColor='#007bff'; }
-    else{
+    if(opened){
+      expandedContainer.innerHTML=''; expandedContainer.dataset.opened='false';
+      wrapper.style.background='#e6f0ff'; wrapper.style.borderColor='#007bff';
+    } else {
+      document.querySelectorAll(`.collapsed[data-idnum="${post.idNum}"][data-channel="${post.channel}"]`).forEach(el=>{
+        if(el !== wrapper){
+          const ex = el.querySelector('.expanded');
+          if(ex){ ex.innerHTML=''; ex.dataset.opened='false'; el.style.background='#e6f0ff'; el.style.borderColor='#007bff'; }
+        }
+      });
       expandedContainer.innerHTML='';
-      const iframe=document.createElement('iframe');
-      iframe.src=`https://t.me/${post.channel}/${post.idNum}?embed=1`;
-      iframe.width='100%';
-      iframe.height='500';
-      expandedContainer.appendChild(iframe);
+      const widgetContainer = document.createElement('div');
+      widgetContainer.style.marginTop='10px';
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = "https://telegram.org/js/telegram-widget.js?22";
+      script.setAttribute('data-telegram-post', `${post.channel}/${post.idNum}`);
+      script.setAttribute('data-width','100%');
+      widgetContainer.appendChild(script);
+      expandedContainer.appendChild(widgetContainer);
       expandedContainer.dataset.opened='true';
       wrapper.style.background='#d1eaff'; wrapper.style.borderColor='#0056b3';
     }
   });
+
   return wrapper;
 }
 
-function displayPosts(){ 
-  const postsContainer=document.getElementById('posts'); 
-  postsContainer.innerHTML=''; 
-  allPosts.forEach(post=>{ postsContainer.appendChild(createPostElement(post)); }); 
+function displayPosts(){
+  const postsContainer=document.getElementById('posts');
+  postsContainer.innerHTML='';
+  if(allPosts.length===0){ postsContainer.innerHTML='Пока пусто...'; return; }
+  allPosts.forEach(post=>{ postsContainer.appendChild(createPostElement(post)); });
 }
 
 function displayGroupedPosts(){
   const container=document.getElementById('grouped-posts');
   container.innerHTML='';
-  if(!window.groupedData) return;
+  if(!window.groupedData || window.groupedData.length===0){ container.innerHTML='Пока пусто...'; return; }
 
   window.groupedData.forEach(group=>{
     const block=document.createElement('div'); block.className='group-block';
     const title=document.createElement('div'); title.className='group-title'; title.textContent=group.group;
     const postsDiv=document.createElement('div'); postsDiv.className='group-posts';
-    title.addEventListener('click', async ()=>{ 
-      if(postsDiv.classList.contains('show')){ postsDiv.classList.remove('show'); postsDiv.innerHTML=''; return; }
-      postsDiv.classList.add('show');
-      if(postsDiv.childElementCount>0) return;
-      setProgress(`Загрузка постов группы "${group.group}"...`,true);
+    title.addEventListener('click', async ()=>{
+      const isOpen = postsDiv.classList.contains('open');
+      if(isOpen){
+        postsDiv.style.maxHeight = '0px';
+        postsDiv.classList.remove('open');
+        setTimeout(()=>{ postsDiv.innerHTML = ''; postsDiv.style.overflow = 'hidden'; }, 360);
+        return;
+      }
+
+      postsDiv.classList.add('open');
+      postsDiv.style.overflow = 'hidden';
+      setProgress(`Загрузка постов группы "${group.group}"...`, true);
+
       for(const id of group.posts){
-        const post=allPosts.find(p=>p.idNum===id);
+        const post = allPosts.find(p=>p.idNum===id);
         if(post){
-          const postWrapper=document.createElement('div'); postWrapper.style.marginBottom='10px';
-          postWrapper.innerHTML='';
-          const widgetScript=document.createElement('script');
-          widgetScript.async=true;
-          widgetScript.src="https://telegram.org/js/telegram-widget.js?22";
-          widgetScript.setAttribute('data-telegram-post', `${post.channel}/${post.idNum}`);
-          widgetScript.setAttribute('data-width','100%');
-          postWrapper.appendChild(widgetScript);
+          const postWrapper = document.createElement('div');
+          postWrapper.style.marginBottom='12px';
+          const script = document.createElement('script');
+          script.async=true;
+          script.src="https://telegram.org/js/telegram-widget.js?22";
+          script.setAttribute('data-telegram-post', `${post.channel}/${post.idNum}`);
+          script.setAttribute('data-width','100%');
+          postWrapper.appendChild(script);
           postsDiv.appendChild(postWrapper);
-          await new Promise(r=>setTimeout(r,50));
+
+          await new Promise(r=>setTimeout(r,70));
+          const desired = postsDiv.scrollHeight;
+          const cap = Math.round(window.innerHeight * 0.7);
+          const finalHeight = Math.min(desired, cap);
+          postsDiv.style.maxHeight = finalHeight + 'px';
+          if(desired > cap){ postsDiv.style.overflow = 'auto'; postsDiv.classList.add('limited'); } else { postsDiv.style.overflow = 'hidden'; postsDiv.classList.remove('limited'); }
         }
       }
+
       setProgress('Готово!');
     });
+
     block.appendChild(title); block.appendChild(postsDiv); container.appendChild(block);
   });
 }
 
-// --- Mistral ---
+// --- Mistral: robust parser + caching of results ---
 async function processPostsOnceMistral(){
   if(allPosts.length===0) return;
   const API_KEY=API_KEY_INPUT.value.trim();
   if(!API_KEY) return alert('Введите ключ API!');
-  const promptText=`Сделай краткое и чистое описание каждого поста Telegram (одно предложение, без эмодзи, **, пробелов и лишних символов). Сгруппируй посты по содержанию. Ответ строго JSON:
+  setProgress('Отправка на Mistral и генерация кратких описаний...', true);
+
+  const payloadPosts = allPosts.map(p=>({ channel: p.channel, idNum: p.idNum, text: (p.text||'').substring(0,800) }));
+  const promptText = `Сделай одно-предложное краткое описание (без эмодзи, без markdown, без лишних символов) каждого поста из списка. Затем сгруппируй посты по содержанию. Ответ строго JSON в формате:
 {"summaries":[{"channel":"<channel>","idNum":<idNum>,"summary":"<текст>"}],"groups":[{"group":"<название группы>","posts":[<idNum>]}]}
-Данные: ${JSON.stringify(allPosts.map(p=>({channel:p.channel,idNum:p.idNum,text:p.text})))}`;
+Данные: ${JSON.stringify(payloadPosts)}`;
+
   try{
-    const resp=await fetch('https://api.mistral.ai/v1/chat/completions',{
-      method:'POST',
-      headers:{Authorization:'Bearer '+API_KEY,'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({model:'mistral-large-latest',messages:[{role:'user',content:promptText}]})
+    const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + API_KEY, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ model: 'mistral-large-latest', messages: [{ role: 'user', content: promptText }], max_tokens: 6000 })
     });
-    const data=await resp.json();
-    let text=data.choices?.[0]?.message?.content||'';
-    const match = text.match(/```json\s*([\s\S]*?)\s*```/);
-    if(!match) throw new Error('Не удалось извлечь JSON из ответа');
-    const jsonText = match[1]; let json;
-    try { json = JSON.parse(jsonText); } catch(e){ console.error('Ошибка парсинга JSON:', e); alert('Ошибка парсинга JSON'); return; }
-    json.summaries.forEach(s=>{ const post=allPosts.find(p=>p.idNum===s.idNum&&p.channel===s.channel); if(post) post.summary=s.summary; });
-    window.groupedData=json.groups;
-  }catch(e){ console.error(e); alert('Ошибка обработки постов: '+e); }
+
+    const data = await resp.json();
+    let text = data.choices?.[0]?.message?.content || '';
+    let jsonText = '';
+    const fenced = text.match(/```json\s*([\s\S]*?)\s*```/);
+    if(fenced) jsonText = fenced[1].trim();
+    else {
+      const start = text.indexOf('{');
+      const end = text.lastIndexOf('}');
+      if(start !== -1 && end !== -1 && end > start) jsonText = text.substring(start, end+1);
+    }
+
+    if(!jsonText){
+      console.error('Отклик Mistral не содержит JSON-блока', text);
+      alert('Не удалось извлечь JSON из ответа Mistral. Проверьте ответ в консоли.');
+      setProgress('Ошибка: не удалось извлечь JSON из ответа Mistral');
+      return;
+    }
+
+    const balanced = tryBalanceBraces(jsonText);
+    let parsed;
+    try { parsed = JSON.parse(balanced); }
+    catch(err){
+      console.error('Ошибка парсинга JSON после восстановления:', err, 'Исходный текст:', jsonText);
+      alert('Ошибка парсинга JSON от Mistral (см. консоль).');
+      setProgress('Ошибка парсинга JSON');
+      return;
+    }
+
+    if(Array.isArray(parsed.summaries)){
+      parsed.summaries.forEach(s=>{
+        const post = allPosts.find(p=>p.idNum===s.idNum && p.channel===s.channel);
+        if(post) post.summary = s.summary;
+      });
+    }
+    window.groupedData = parsed.groups || [];
+
+    setProgress('Готово: краткие описания получены', false);
+    return true;
+  }catch(e){
+    console.error('Ошибка при вызове Mistral', e);
+    alert('Ошибка при вызове Mistral: ' + e);
+    setProgress('Ошибка при вызове Mistral');
+    return false;
+  }
 }
 
-// --- Buttons ---
-document.getElementById('load').addEventListener('click',async()=>{
-  setProgress('Загрузка постов...',true);
+function tryBalanceBraces(s){
+  let openCurly = 0, openSquare = 0;
+  for(const ch of s){
+    if(ch === '{') openCurly++;
+    if(ch === '}') openCurly--;
+    if(ch === '[') openSquare++;
+    if(ch === ']') openSquare--;
+  }
+  let res = s;
+  while(openSquare > 0){ res = res + ']'; openSquare--; }
+  while(openSquare < 0){ res = '[' + res; openSquare++; }
+  while(openCurly > 0){ res = res + '}'; openCurly--; }
+  while(openCurly < 0){ res = '{' + res; openCurly++; }
+  return res;
+}
+
+// --- Главная логика загрузки с проверкой кеша ---
+async function loadHandler({ forceRefresh = false } = {}){
+  setProgress('Проверка кеша...', true);
+  const inputs = inputsFromUI();
+  const useTimeMode = modeToggle.checked;
+  const timeAmount = parseInt(timeAmountInput.value) || 1;
+  const timeUnit = timeUnitSelect.value;
+
+  const cache = loadCache();
+
+  if(!forceRefresh && isCacheValid(cache, inputs, useTimeMode, timeAmount, timeUnit) && Array.isArray(cache.allPosts) && cache.allPosts.length > 0){
+    // load from cache: restore dates
+    allPosts = cache.allPosts.map(p => ({ ...p, date: p.date ? new Date(p.date) : null }));
+    window.groupedData = cache.groupedData || [];
+    setProgress(`Данные загружены из кеша (сохранено ${cache.savedAt})`);
+    displayPosts();
+    displayGroupedPosts();
+    return;
+  }
+
+  // если forceRefresh — удалим старый кеш для текущ конфигурации (чтобы не мешал)
+  if(forceRefresh && cache) clearCache();
+
+  // fetch posts from telegram
   await fetchPostsFromTelegram();
-  setProgress('Генерация кратких версий и группировки...',true);
-  await processPostsOnceMistral();
+
+  if(allPosts.length === 0){
+    setProgress('Нет постов для обработки', false);
+    displayPosts(); displayGroupedPosts();
+    return;
+  }
+
+  // send to Mistral
+  const ok = await processPostsOnceMistral();
+  if(!ok){
+    // Mistral failed; still display posts without summaries
+    displayPosts();
+    displayGroupedPosts();
+    return;
+  }
+
+  // Save to cache: serialize dates to ISO
+  const cacheObj = {
+    inputs,
+    useTimeMode,
+    timeAmount,
+    timeUnit,
+    savedAt: new Date().toLocaleString(),
+    allPosts: allPosts.map(p => ({ channel: p.channel, idNum: p.idNum, date: p.date ? p.date.toISOString() : null, text: p.text, summary: p.summary })),
+    groupedData: window.groupedData
+  };
+  saveCache(cacheObj);
+
+  // display
   displayPosts();
   displayGroupedPosts();
-  setProgress('Готово!');
-});
+  setProgress('Готово! Данные сохранены в локальном кеше.');
+}
 
-document.getElementById('refresh').addEventListener('click',()=>{
-  allPosts=[]; window.groupedData=[]; document.getElementById('posts').innerHTML=''; document.getElementById('grouped-posts').innerHTML='';
-  setProgress('Готово. Теперь можно загрузить свежие данные.');
-});
+// helper: get inputs from UI
+function inputsFromUI(){
+  return [...linksContainer.querySelectorAll('.link-input')].map(div=>{
+    return { url: div.querySelector('input[type="text"]').value.trim(), count: parseInt(div.querySelector('input.post-count').value) || 3 };
+  }).filter(x=>x.url);
+}
+
+// --- Кнопки ---
+document.getElementById('load').addEventListener('click', async ()=>{ await loadHandler({ forceRefresh: false }); });
+document.getElementById('refresh').addEventListener('click', async ()=>{ await loadHandler({ forceRefresh: true }); });
+
+// Сохранение API key по Enter
+API_KEY_INPUT.addEventListener('keydown', e=>{ if(e.key === 'Enter') setCookie('mistral_api_key', API_KEY_INPUT.value.trim(), 365); });
+
+// --- Попытка загрузить из кеша при старте (если соответствует текущим настройкам) ---
+(async function initFromCache(){
+  const inputs = inputsFromUI();
+  const useTimeMode = modeToggle.checked;
+  const timeAmount = parseInt(timeAmountInput.value) || 1;
+  const timeUnit = timeUnitSelect.value;
+  const cache = loadCache();
+  if(isCacheValid(cache, inputs, useTimeMode, timeAmount, timeUnit) && cache.allPosts){
+    allPosts = cache.allPosts.map(p => ({ ...p, date: p.date ? new Date(p.date) : null }));
+    window.groupedData = cache.groupedData || [];
+    displayPosts();
+    displayGroupedPosts();
+    setProgress(`Загружено из кеша (сохранено ${cache.savedAt})`);
+  }
+})();
 </script>
 </body>
 </html>
