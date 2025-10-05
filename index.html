@@ -1,49 +1,371 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Последние посты Telegram</title>
-  <style>
-    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; }
-    .post { border-bottom: 1px solid #ddd; padding: 15px 0; }
-    .post:last-child { border-bottom: none; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Telegram посты - Mistral</title>
+<style>
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0; padding: 0;
+  background: linear-gradient(to right, #f0f4ff, #ffffff);
+  color: #1a1a1a;
+}
+h1 {
+  text-align: center;
+  padding: 20px 10px;
+  color: #0047ab;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.container { display: flex; gap: 20px; padding: 20px; }
+.column {
+  flex: 1;
+  background:#ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  max-height: 80vh;
+  overflow-y: auto;
+  transition: transform 0.2s;
+}
+.column:hover { transform: translateY(-3px); }
+input[type="text"], input[type="number"] {
+  width: 70%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.2s;
+}
+input[type="text"]:focus, input[type="number"]:focus { border-color: #007bff; outline: none; }
+input.post-count { width: 25%; margin-left: 5px; }
+button {
+  padding: 10px 18px;
+  border: none;
+  background: linear-gradient(90deg,#007bff,#0056b3);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.3s;
+  margin-right: 5px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+button:hover { background: linear-gradient(90deg,#0056b3,#003f7f); transform: translateY(-2px); }
+.link-input {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 5px;
+}
+.link-input input { flex: 1; }
+.remove-btn {
+  background: #dc3545;
+  padding: 12px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+  height: 45px;
+  line-height: 1;
+}
+.remove-btn:hover { background: #a71d2a; }
+#progress { font-weight: bold; margin: 10px 0; color:#0047ab; }
+.loader {
+  display:inline-block;
+  width:14px;
+  height:14px;
+  border:2px solid #007bff;
+  border-radius:50%;
+  border-top-color:transparent;
+  animation: spin 0.8s linear infinite;
+  margin-left:5px;
+  vertical-align:middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.post-wrapper { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+.collapsed {
+  cursor: pointer;
+  padding: 12px;
+  border: 2px solid #007bff;
+  border-radius: 12px;
+  background: #e6f0ff;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+  transition: background 0.3s, border-color 0.3s, transform 0.2s;
+}
+.collapsed:hover { background: #d0e4ff; border-color: #0056b3; transform: translateY(-2px); }
+.collapsed span { font-weight: bold; font-size: 14px; }
+.expanded { margin-top: 8px; overflow:hidden; transition:max-height 0.5s ease; }
+.group-block {
+  border: 2px solid #007bff;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 15px;
+  background: #f0f7ff;
+  transition: transform 0.2s;
+}
+.group-block:hover { transform: translateY(-2px); }
+.group-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  cursor: pointer;
+  padding: 8px;
+  background: #d6eaff;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+.group-title:hover { background: #c0e0ff; }
+.group-posts { max-height: 0; overflow:hidden; transition: max-height 0.5s ease; } 
+.group-posts.show { max-height: 2000px; }
+.column h2 {
+  color: #0047ab;
+  font-size: 18px;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+</style>
 </head>
 <body>
-  <h1>Последние посты Telegram</h1>
-  <div id="posts">Загрузка...</div>
 
-  <script>
-    const channel = 'NASHIMAL4IKI'; // <-- замени на нужный канал
-    const url = `https://t.me/s/${channel}`;
+<h1>Telegram посты - Mistral</h1>
 
-    async function loadPosts() {
-      try {
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-        const data = await response.json();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(data.contents, 'text/html');
+<div style="max-width: 900px; margin: 0 auto; padding: 0 10px;">
+  <p>Введите ваш API ключ Mistral:</p>
+  <input type="text" id="api-key" placeholder="Введите ключ API здесь">
 
-        const posts = [...doc.querySelectorAll('.tgme_widget_message_text')]
-          .slice(-3) // последние 3 поста
-          .reverse(); // чтобы были от нового к старому
+  <div id="links-inputs">
+    <p>Введите ссылки на публичные каналы Telegram и количество постов для каждого:</p>
+    <div id="links-container"></div>
+    <button id="add-link">Добавить ссылку</button>
+    <button id="load">Загрузить посты</button>
+    <button id="refresh">Обновить данные</button>
+  </div>
 
-        const container = document.getElementById('posts');
-        container.innerHTML = '';
+  <div id="progress">Готово</div>
+</div>
 
-        posts.forEach(p => {
-          const div = document.createElement('div');
-          div.className = 'post';
-          div.innerHTML = p.innerHTML;
-          container.appendChild(div);
-        });
-      } catch (e) {
-        document.getElementById('posts').innerText = 'Ошибка загрузки: ' + e;
-      }
+<div class="container">
+  <div class="column">
+    <h2>Все посты (краткие)</h2>
+    <div id="posts" class="post-wrapper">Пока пусто...</div>
+  </div>
+  <div class="column">
+    <h2>Группировка по содержанию</h2>
+    <div id="grouped-posts" class="post-wrapper">Пока пусто...</div>
+  </div>
+</div>
+
+<script>
+// --- Cookie helper ---
+function setCookie(name,value,days){
+  const d=new Date(); d.setTime(d.getTime()+(days*24*60*60*1000));
+  document.cookie=name+"="+encodeURIComponent(value)+";expires="+d.toUTCString()+";path=/";
+}
+function getCookie(name){
+  const match=document.cookie.match(new RegExp('(^| )'+name+'=([^;]+)'));
+  if(match) return decodeURIComponent(match[2]);
+  return null;
+}
+
+// --- Variables ---
+const API_KEY_INPUT=document.getElementById('api-key');
+const linksContainer=document.getElementById('links-container');
+const progressEl=document.getElementById('progress');
+let allPosts=[];
+window.groupedData=[];
+
+// --- API key ---
+const savedKey=getCookie('mistral_api_key');
+if(savedKey) API_KEY_INPUT.value=savedKey;
+API_KEY_INPUT.addEventListener('input',()=>setCookie('mistral_api_key',API_KEY_INPUT.value.trim(),365));
+
+// --- Links ---
+function saveLinks(){
+  const inputs=[...linksContainer.querySelectorAll('.link-input')].map(div=>{
+    const url=div.querySelector('input[type="text"]').value.trim();
+    const count=parseInt(div.querySelector('input.post-count').value)||3;
+    return {url,count};
+  }).filter(l=>l.url);
+  setCookie('telegram_links',JSON.stringify(inputs),365);
+}
+function addLinkField(value='',count=3){
+  const div=document.createElement('div');
+  div.className='link-input';
+  div.innerHTML=`<input type="text" placeholder="https://t.me/channel" value="${value}">
+                 <input type="number" class="post-count" min="1" value="${count}">
+                 <button class="remove-btn">✖</button>`;
+  div.querySelector('input[type="text"]').addEventListener('input',saveLinks);
+  div.querySelector('input.post-count').addEventListener('input',saveLinks);
+  div.querySelector('.remove-btn').addEventListener('click',()=>{ div.remove(); saveLinks(); });
+  linksContainer.appendChild(div);
+}
+const savedLinks=getCookie('telegram_links');
+if(savedLinks){ try{ JSON.parse(savedLinks).forEach(l=>addLinkField(l.url,l.count)); } catch(e){ addLinkField(); addLinkField(); } }
+else{ addLinkField(); addLinkField(); addLinkField(); }
+document.getElementById('add-link').addEventListener('click',()=>addLinkField());
+
+// --- Progress helper ---
+function setProgress(text,showLoader=false){ progressEl.innerHTML=text+(showLoader?'<span class="loader"></span>':''); }
+
+// --- Helper ---
+function parseChannelFromLink(link){ return link.replace(/^https?:\/\/t\.me\/(s\/)?/,''); }
+function qAll(node,sel){ return [...node.querySelectorAll(sel)]; }
+
+// --- Fetch posts ---
+async function fetchPostsFromTelegram(){
+  setProgress('Сбор постов...',true);
+  const inputs=[...linksContainer.querySelectorAll('.link-input')].map(div=>{
+    const url=div.querySelector('input[type="text"]').value.trim();
+    const count=parseInt(div.querySelector('input.post-count').value)||3;
+    return {url,count};
+  }).filter(l=>l.url);
+  if(inputs.length===0) return alert('Введите хотя бы одну ссылку');
+  saveLinks();
+
+  allPosts=[];
+  for(const {url,count} of inputs){
+    const channel=parseChannelFromLink(url);
+    const fetchUrl=`https://t.me/s/${channel}`;
+    try{
+      const resp=await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(fetchUrl)}`);
+      const html=await resp.text();
+      const doc=new DOMParser().parseFromString(html,'text/html');
+      const rawNodes=qAll(doc,'.tgme_widget_message_wrap');
+      const channelPosts=rawNodes.slice(-count).map(node=>{
+        const dataPost=node.getAttribute('data-post');
+        let idNum=dataPost?parseInt(dataPost.split('/')[1]):null;
+        if(!idNum){ const a=node.querySelector('a.tgme_widget_message_date'); if(a){ const m=a.getAttribute('href')?.match(/\/(\d+)$/); if(m)idNum=parseInt(m[1]); } }
+        const textEl=node.querySelector('.tgme_widget_message_text');
+        const text=textEl?.textContent?.trim()||'';
+        const timeEl=node.querySelector('time');
+        const date=timeEl&&timeEl.getAttribute('datetime')?new Date(timeEl.getAttribute('datetime')):null;
+        return {channel,idNum,date,text};
+      });
+      allPosts.push(...channelPosts);
+    }catch(e){ console.error(e); }
+  }
+  // Sort dates
+  const channelsMap={};
+  allPosts.forEach(p=>{ if(!channelsMap[p.channel]) channelsMap[p.channel]=[]; channelsMap[p.channel].push(p); });
+  for(const ch in channelsMap){
+    const posts=channelsMap[ch].sort((a,b)=>(a.idNum||0)-(b.idNum||0));
+    const avgInterval=10*60*1000;
+    for(let i=0;i<posts.length;i++){ if(!posts[i].date) posts[i].date=posts[i-1]?.date?new Date(posts[i-1].date.getTime()+avgInterval):new Date(); }
+  }
+  allPosts.sort((a,b)=>b.date-a.date);
+  setProgress('Посты загружены');
+  return allPosts;
+}
+
+// --- Display functions ---
+function createPostElement(post){
+  const wrapper=document.createElement('div');
+  wrapper.className='collapsed';
+  wrapper.setAttribute('data-idnum',post.idNum);
+  wrapper.setAttribute('data-channel',post.channel);
+  wrapper.innerHTML=`<span>${post.channel}</span> ${post.summary||post.text?.substring(0,50)||''}`;
+  const expandedContainer=document.createElement('div'); expandedContainer.className='expanded';
+  wrapper.appendChild(expandedContainer);
+
+  wrapper.addEventListener('click',()=>{
+    const opened=expandedContainer.dataset.opened==='true';
+    if(opened){ expandedContainer.innerHTML=''; expandedContainer.dataset.opened='false'; wrapper.style.background='#e6f0ff'; wrapper.style.borderColor='#007bff'; }
+    else{
+      expandedContainer.innerHTML='';
+      const iframe=document.createElement('iframe');
+      iframe.src=`https://t.me/${post.channel}/${post.idNum}?embed=1`;
+      iframe.width='100%';
+      iframe.height='500';
+      expandedContainer.appendChild(iframe);
+      expandedContainer.dataset.opened='true';
+      wrapper.style.background='#d1eaff'; wrapper.style.borderColor='#0056b3';
     }
+  });
+  return wrapper;
+}
 
-    loadPosts();
-  </script>
+function displayPosts(){ 
+  const postsContainer=document.getElementById('posts'); 
+  postsContainer.innerHTML=''; 
+  allPosts.forEach(post=>{ postsContainer.appendChild(createPostElement(post)); }); 
+}
+
+function displayGroupedPosts(){
+  const container=document.getElementById('grouped-posts');
+  container.innerHTML='';
+  if(!window.groupedData) return;
+
+  window.groupedData.forEach(group=>{
+    const block=document.createElement('div'); block.className='group-block';
+    const title=document.createElement('div'); title.className='group-title'; title.textContent=group.group;
+    const postsDiv=document.createElement('div'); postsDiv.className='group-posts';
+    title.addEventListener('click', async ()=>{ 
+      if(postsDiv.classList.contains('show')){ postsDiv.classList.remove('show'); postsDiv.innerHTML=''; return; }
+      postsDiv.classList.add('show');
+      if(postsDiv.childElementCount>0) return;
+      setProgress(`Загрузка постов группы "${group.group}"...`,true);
+      for(const id of group.posts){
+        const post=allPosts.find(p=>p.idNum===id);
+        if(post){
+          const postWrapper=document.createElement('div'); postWrapper.style.marginBottom='10px';
+          postWrapper.innerHTML='';
+          const widgetScript=document.createElement('script');
+          widgetScript.async=true;
+          widgetScript.src="https://telegram.org/js/telegram-widget.js?22";
+          widgetScript.setAttribute('data-telegram-post', `${post.channel}/${post.idNum}`);
+          widgetScript.setAttribute('data-width','100%');
+          postWrapper.appendChild(widgetScript);
+          postsDiv.appendChild(postWrapper);
+          await new Promise(r=>setTimeout(r,50));
+        }
+      }
+      setProgress('Готово!');
+    });
+    block.appendChild(title); block.appendChild(postsDiv); container.appendChild(block);
+  });
+}
+
+// --- Mistral ---
+async function processPostsOnceMistral(){
+  if(allPosts.length===0) return;
+  const API_KEY=API_KEY_INPUT.value.trim();
+  if(!API_KEY) return alert('Введите ключ API!');
+  const promptText=`Сделай краткое и чистое описание каждого поста Telegram (одно предложение, без эмодзи, **, пробелов и лишних символов). Сгруппируй посты по содержанию. Ответ строго JSON:
+{"summaries":[{"channel":"<channel>","idNum":<idNum>,"summary":"<текст>"}],"groups":[{"group":"<название группы>","posts":[<idNum>]}]}
+Данные: ${JSON.stringify(allPosts.map(p=>({channel:p.channel,idNum:p.idNum,text:p.text})))}`;
+  try{
+    const resp=await fetch('https://api.mistral.ai/v1/chat/completions',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+API_KEY,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({model:'mistral-large-latest',messages:[{role:'user',content:promptText}]})
+    });
+    const data=await resp.json();
+    let text=data.choices?.[0]?.message?.content||'';
+    const match = text.match(/```json\s*([\s\S]*?)\s*```/);
+    if(!match) throw new Error('Не удалось извлечь JSON из ответа');
+    const jsonText = match[1]; let json;
+    try { json = JSON.parse(jsonText); } catch(e){ console.error('Ошибка парсинга JSON:', e); alert('Ошибка парсинга JSON'); return; }
+    json.summaries.forEach(s=>{ const post=allPosts.find(p=>p.idNum===s.idNum&&p.channel===s.channel); if(post) post.summary=s.summary; });
+    window.groupedData=json.groups;
+  }catch(e){ console.error(e); alert('Ошибка обработки постов: '+e); }
+}
+
+// --- Buttons ---
+document.getElementById('load').addEventListener('click',async()=>{
+  setProgress('Загрузка постов...',true);
+  await fetchPostsFromTelegram();
+  setProgress('Генерация кратких версий и группировки...',true);
+  await processPostsOnceMistral();
+  displayPosts();
+  displayGroupedPosts();
+  setProgress('Готово!');
+});
+
+document.getElementById('refresh').addEventListener('click',()=>{
+  allPosts=[]; window.groupedData=[]; document.getElementById('posts').innerHTML=''; document.getElementById('grouped-posts').innerHTML='';
+  setProgress('Готово. Теперь можно загрузить свежие данные.');
+});
+</script>
 </body>
 </html>
